@@ -1,9 +1,10 @@
 import 'dart:convert';
 
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:fluttertube/models/video.dart';
 import 'package:http/http.dart' as http;
 
-const API_KEY = 'AIzaSyCx3mEDwDZ61DRQ8JiaSXXv2AMNosfmzUM';
+final API_KEY = DotEnv().env['API_KEY'];
 
 class Api {
   String? _search;
@@ -13,34 +14,32 @@ class Api {
     _search = search;
 
     http.Response response = await http.get(
-      Uri.parse('https://www.googleapis.com/youtube/v3/search?part=snippet&q=$search&type=video&key=$API_KEY&maxResults=10')
-    );
+        Uri.parse('https://www.googleapis.com/youtube/v3/search?part=snippet&q='
+            '$search&type=video&key=$API_KEY&maxResults=10'));
 
     return decode(response);
   }
 
   Future<List<Video>> nextPage() async {
-    http.Response response = await http.get(
-        Uri.parse('https://www.googleapis.com/youtube/v3/search?part=snippet&q=$_search&type=video&key=$API_KEY&maxResults=10&pageToken=$_nextToken')
-    );
+    http.Response response = await http.get(Uri.parse(
+        'https://www.googleapis.com/youtube/v3/search?part=snippet&q='
+        '$_search&type=video&key=$API_KEY&maxResults=10&pageToken=$_nextToken'));
 
     return decode(response);
   }
 
   List<Video> decode(http.Response response) {
-    if(response.statusCode == 200) {
+    if (response.statusCode == 200) {
       var decoded = json.decode(response.body);
 
       _nextToken = decoded['nextPageToken'];
 
-      List<Video> videos = decoded['items'].map<Video>(
-          (map) {
-            return Video.fromJson(map);
-          }
-      ).toList();
+      List<Video> videos = decoded['items'].map<Video>((map) {
+        return Video.fromJson(map);
+      }).toList();
 
       return videos;
-    }else {
+    } else {
       throw Exception('Failed to load videos');
     }
   }
